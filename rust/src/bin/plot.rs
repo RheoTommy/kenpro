@@ -1,7 +1,7 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Parser;
 use plotters::prelude::*;
-use std::fs;
+use rust::io::read_clustered_csv;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -44,52 +44,6 @@ struct Sample {
     cid: isize,
     x: f64,
     y: f64,
-}
-
-fn parse_csv(path: &str, x_col: usize, y_col: usize) -> Result<Vec<Sample>> {
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("failed to read '{}': not found or unreadable", path))?;
-
-    let mut out = Vec::new();
-    for (lineno, raw) in content.lines().enumerate() {
-        let line = raw.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let cols: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-        if cols.len() < 3 {
-            bail!(
-                "line {}: expected at least 3 columns (cid,x,y,...)",
-                lineno + 1
-            );
-        }
-        let cid: isize = cols[0]
-            .parse()
-            .with_context(|| format!("line {}: invalid cid '{}'", lineno + 1, cols[0]))?;
-
-        let px = 1 + x_col; // offset by cid column
-        let py = 1 + y_col;
-        if px >= cols.len() || py >= cols.len() {
-            bail!(
-                "line {}: x_col/y_col out of bounds for {} data columns",
-                lineno + 1,
-                cols.len() - 1
-            );
-        }
-
-        let x: f64 = cols[px]
-            .parse()
-            .with_context(|| format!("line {}: invalid x '{}'", lineno + 1, cols[px]))?;
-        let y: f64 = cols[py]
-            .parse()
-            .with_context(|| format!("line {}: invalid y '{}'", lineno + 1, cols[py]))?;
-
-        out.push(Sample { cid, x, y });
-    }
-    if out.is_empty() {
-        bail!("no samples found in input");
-    }
-    Ok(out)
 }
 
 fn compute_ranges(samples: &[Sample]) -> ((f64, f64), (f64, f64)) {
@@ -147,6 +101,27 @@ fn draw(samples: &[Sample], args: &Args) -> Result<()> {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let samples = parse_csv(&args.input, args.x_col, args.y_col)?;
+    let rows = read_clustered_csv(&args.input)?;
+    if rows.is_empty() {
+        anyhow::bail!("no samples found in input");
+    }
+    let samples = rows
+        .into_iter()
+        .map(|(cid, coords)| {
+            let px = args.x_col;
+            let py = args.y_col;
+            if px >= coords.len() || py >= coords.len() {
+                anyhow::bail!(
+                    "x_col/y_col out of bounds for {} data columns",
+                    coords.len()
+                );
+            }
+            Ok(Sample {
+                cid,
+                x: coords[px],
+                y: coords[py],
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
     draw(&samples, &args)
 }

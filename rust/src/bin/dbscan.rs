@@ -1,13 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
-use ordered_float::OrderedFloat;
-use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::io::{BufWriter, Write};
+use std::collections::HashSet;
 
 use rust::algo::Algo;
 use rust::fake_query::FakeQueryEngine;
-use rust::types::{Class, Point};
+use rust::io::{read_points_csv, write_clustered_csv};
+use rust::types::Point;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -27,78 +25,6 @@ struct Args {
     eps: f64,
 }
 
-fn parse_csv_points(path: &str) -> Result<Vec<Point>> {
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("failed to read '{}': not found or unreadable", path))?;
-
-    let mut points: Vec<Point> = Vec::new();
-    let mut expected_dim: Option<usize> = None;
-
-    for (lineno, raw_line) in content.lines().enumerate() {
-        let line = raw_line.trim();
-        if line.is_empty() {
-            continue;
-        }
-
-        let coords: Vec<OrderedFloat<f64>> = line
-            .split(',')
-            .map(|s| s.trim().parse::<f64>().map(OrderedFloat))
-            .collect::<std::result::Result<_, _>>()
-            .with_context(|| format!("parse error at line {}", lineno + 1))?;
-
-        if let Some(dim) = expected_dim {
-            if coords.len() != dim {
-                anyhow::bail!(
-                    "dimension mismatch at line {}: expected {}, got {}",
-                    lineno + 1,
-                    dim,
-                    coords.len()
-                );
-            }
-        } else {
-            expected_dim = Some(coords.len());
-        }
-
-        points.push(coords);
-    }
-
-    if points.is_empty() {
-        anyhow::bail!("no points found in input");
-    }
-
-    Ok(points)
-}
-
-fn write_clustered_csv(
-    path: &str,
-    points: &[Point],
-    classes: &HashMap<&Point, Class>,
-) -> Result<()> {
-    let file = fs::File::create(path).with_context(|| {
-        format!(
-            "failed to create '{}': insufficient permissions or path invalid",
-            path
-        )
-    })?;
-    let mut w = BufWriter::new(file);
-
-    for p in points.iter() {
-        let cid = match classes.get(p).copied().unwrap_or(Class::Noise) {
-            Class::Classified(id) => id as isize,
-            Class::Noise | Class::Unclassified => -1,
-        };
-
-        write!(w, "{}", cid)?;
-        for x in p.iter() {
-            write!(w, ",{}", x.0)?;
-        }
-        writeln!(w)?;
-    }
-
-    w.flush()?;
-    Ok(())
-}
-
 fn main() -> Result<()> {
     let Args {
         input,
@@ -107,7 +33,7 @@ fn main() -> Result<()> {
         eps,
     } = Args::parse();
 
-    let points = parse_csv_points(&input)?;
+    let points = read_points_csv(&input)?;
 
     // Build a set of references into `points` so the algorithm can refer to them.
     let point_refs: HashSet<&Point> = points.iter().collect();
