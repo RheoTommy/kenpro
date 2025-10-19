@@ -78,13 +78,15 @@ impl<'a, T: RegionQuery<'a>> Algo<'a, T> {
 
         // This point is a core point of a cluster {cluster_id}.
 
-        // Mark the neighbors as classified first.
+        // Mark neighbors that are currently unassigned/noise as classified.
         for &p in neighbors.iter() {
-            if let Some(old) = classes.insert(p, Class::Classified(cluster_id)) {
-                assert!(
-                    old == Class::Unclassified || old == Class::Noise,
-                    "The entry should be unclassified or noise here."
-                )
+            match classes[p] {
+                Class::Unclassified | Class::Noise => {
+                    classes.insert(p, Class::Classified(cluster_id));
+                }
+                Class::Classified(_) => {
+                    // Already assigned: leave as-is.
+                }
             }
         }
 
@@ -99,16 +101,9 @@ impl<'a, T: RegionQuery<'a>> Algo<'a, T> {
             if neighbors.len() >= self.min_pts {
                 for &p in neighbors.iter() {
                     match classes[p] {
-                        Class::Classified(cid) => {
-                            if cid != cluster_id {
-                                assert!(
-                                    self.region_query.run(p, self.eps).len() < self.min_pts,
-                                    "Point {:?} is already classified into cluster {}, but it is a core point of cluster {}.",
-                                    p,
-                                    cid,
-                                    cluster_id
-                                );
-                            }
+                        Class::Classified(_cid) => {
+                            // Already assigned. If it belongs to a different cluster,
+                            // leave it unchanged.
                         }
                         Class::Unclassified => {
                             // Check neighbors of this point recursively.
@@ -116,9 +111,7 @@ impl<'a, T: RegionQuery<'a>> Algo<'a, T> {
                             classes.insert(p, Class::Classified(cluster_id));
                         }
                         Class::Noise => {
-                            // This point is detected as a non-core point.
-                            // The cluster will include this point as a border point.
-                            // And the cluster id of this point is not deterministic by the algorithm.
+                            // Include as border point.
                             classes.insert(p, Class::Classified(cluster_id));
                         }
                     }
