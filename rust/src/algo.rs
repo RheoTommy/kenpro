@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 pub trait RegionQuery<'a> {
     fn init(&mut self, points: &'a HashSet<&'a Point>);
     fn run(&self, point: &'a Point, eps: f64) -> HashSet<&'a Point>;
+    fn k_dist(&self, point: &'a Point, k: usize) -> f64;
 }
 
 pub struct Algo<'a, T: RegionQuery<'a>> {

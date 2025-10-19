@@ -4,6 +4,7 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
 pub struct FakeQueryEngine<'a> {
+    // Includes the point itself at distance 0.
     sorted_by_distance: HashMap<&'a Point, Vec<&'a Point>>,
 }
 
@@ -12,6 +13,17 @@ impl<'a> FakeQueryEngine<'a> {
         Self {
             sorted_by_distance: HashMap::new(),
         }
+    }
+
+    /// Returns the distance from `point` to its k-th nearest neighbor
+    /// (excluding the point itself). Requires `k` in 1..=N-1.
+    pub fn k_distance(&self, point: &'a Point, k: usize) -> f64 {
+        let sorted = self
+            .sorted_by_distance
+            .get(point)
+            .expect("FakeQueryEngine not initialized for this point");
+        assert!(k > 0 && k < sorted.len(), "k must be in 1..=N-1");
+        crate::types::dist(point, sorted[k])
     }
 }
 
@@ -58,5 +70,21 @@ impl<'a> RegionQuery<'a> for FakeQueryEngine<'a> {
         }
 
         sorted.iter().take(ge).cloned().collect()
+    }
+
+    fn k_dist(&self, point: &'a Point, k: usize) -> f64 {
+        assert_ne!(
+            self.sorted_by_distance.get(point),
+            None,
+            "The query engine is not initialized for this point."
+        );
+
+        let sorted = self.sorted_by_distance.get(point).unwrap();
+
+        if k >= sorted.len() {
+            panic!("k is out of bounds");
+        }
+
+        dist(&sorted[k], &point)
     }
 }
