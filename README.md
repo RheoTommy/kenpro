@@ -66,11 +66,11 @@ For convenience, use `scripts/workflow.sh` to produce a k-distance plot, then (o
 - Step 1: Generate k-distance plot
   - `bash scripts/workflow.sh -n <name> [-k 4]`
   - Reads `testcases/input/<name>.csv`
-  - Writes `testcases/output/<name>_kdist.png`
+  - Writes `testcases/output/<name>_k<k>_kdist.png`
 - Step 2: Pick `eps` from the elbow of the curve
   - Then run:
     - `bash scripts/workflow.sh -n <name> -e <eps> [-k 4] [-m <min_points>] [--x-col 0] [--y-col 1]`
-  - Writes clustered CSV to `testcases/output/<name>.csv` and PNG to `testcases/output/<name>.png`
+  - Writes clustered CSV to `testcases/output/<name>_eps<eps>_k<k>.csv` and PNG to `testcases/output/<name>_eps<eps>_k<k>.png`
 
 Examples
 - `bash scripts/workflow.sh -n moons -k 4`

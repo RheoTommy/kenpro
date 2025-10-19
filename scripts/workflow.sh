@@ -63,7 +63,7 @@ fi
 mkdir -p "$outdir"
 
 # 1) k-distance plot
-kdist_png="$outdir/${name}_kdist.png"
+kdist_png="$outdir/${name}_k${k}_kdist.png"
 echo "[1/2] Generating k-distance plot: $kdist_png (k=$k)"
 cargo run --manifest-path rust/Cargo.toml --bin k_dist -- "$input" "$kdist_png" -k "$k"
 echo "  -> Wrote $kdist_png"
@@ -72,8 +72,9 @@ echo "  -> Wrote $kdist_png"
 if [[ -n "$eps" ]]; then
   mp="$k"
   if [[ -n "$min_points" ]]; then mp="$min_points"; fi
-  clustered_csv="$outdir/${name}.csv"
-  clustered_png="$outdir/${name}.png"
+  eps_tag=$(printf "%g" "$eps" | tr '.' 'p')
+  clustered_csv="$outdir/${name}_eps${eps_tag}_k${k}.csv"
+  clustered_png="$outdir/${name}_eps${eps_tag}_k${k}.png"
 
   echo "[2/2] Running DBSCAN: eps=$eps, min_points=$mp"
   cargo run --manifest-path rust/Cargo.toml --bin dbscan -- "$input" "$clustered_csv" "$mp" "$eps"
@@ -85,4 +86,3 @@ if [[ -n "$eps" ]]; then
 else
   echo "No eps provided. Inspect $kdist_png and rerun with -e <eps> to complete DBSCAN and plotting."
 fi
-
