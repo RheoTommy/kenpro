@@ -75,3 +75,20 @@ For convenience, use `scripts/workflow.sh` to produce a k-distance plot, then (o
 Examples
 - `bash scripts/workflow.sh -n moons -k 4`
 - `bash scripts/workflow.sh -n moons -k 4 -e 0.15 -m 4 --x-col 0 --y-col 1`
+
+## Mise Setup (optional)
+
+You can use `mise` to install pinned toolchains defined in this repo.
+
+- Install mise (choose one):
+  - macOS (Homebrew): `brew install mise`
+  - Linux/macOS (curl): `curl https://mise.jdx.dev/install.sh | sh`
+  - Docs: https://mise.jdx.dev/
+
+- Trust and install toolchains:
+  - `mise trust`          # trust the repo configuration
+  - `mise install`        # install pinned toolchains (e.g., Rust from rust/mise.toml)
+
+Notes
+- This repo currently does not include root-level mise tasks. Use the Cargo commands shown above to run the binaries.
+- Toolchain pins live under `rust/mise.toml` and `python/mise.toml`.
