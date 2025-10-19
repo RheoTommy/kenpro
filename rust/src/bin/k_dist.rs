@@ -3,7 +3,7 @@ use clap::Parser;
 use plotters::prelude::*;
 use std::collections::HashSet;
 use rust::algo::RegionQuery;
-use rust::fake_query::FakeQueryEngine;
+use rust::query::RTreeQueryEngine;
 use rust::io::read_points_csv;
 use rust::types::Point;
 
@@ -12,7 +12,7 @@ use rust::types::Point;
     name = "k-dist",
     author,
     version,
-    about = "k-distance plot using Fake query engine"
+    about = "k-distance plot using RTree (real) query engine"
 )]
 struct Args {
     /// Input CSV of points: x1,x2,... per line (no header)
@@ -37,13 +37,13 @@ struct Args {
 }
 
 fn compute_k_distances(points: &[Point], k: usize) -> Result<Vec<f64>> {
-    let mut engine = FakeQueryEngine::new();
+    let mut engine = RTreeQueryEngine::new();
     let refs: HashSet<&Point> = points.iter().collect();
     engine.init(&refs);
 
     let mut dists = Vec::with_capacity(points.len());
     for p in points.iter() {
-        let d = engine.k_distance(p, k);
+        let d = engine.k_dist(p, k);
         dists.push(d);
     }
     Ok(dists)

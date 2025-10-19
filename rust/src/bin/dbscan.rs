@@ -3,8 +3,8 @@ use clap::Parser;
 use std::collections::HashSet;
 
 use rust::algo::Algo;
-use rust::fake_query::FakeQueryEngine;
 use rust::io::{read_points_csv, write_clustered_csv};
+use rust::query::RTreeQueryEngine;
 use rust::types::Point;
 
 #[derive(Debug, Parser)]
@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     // Build a set of references into `points` so the algorithm can refer to them.
     let point_refs: HashSet<&Point> = points.iter().collect();
 
-    let mut engine = FakeQueryEngine::new();
+    let mut engine = RTreeQueryEngine::new();
     let algo = Algo::new(&mut engine, &point_refs, eps, min_points);
     let classes = algo.dbscan();
 

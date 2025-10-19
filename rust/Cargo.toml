@@ -9,3 +9,4 @@ ordered-float = "5.1.0"
 anyhow = "1.0.100"
 clap = { version = "4.5.49", features = ["derive"] }
 plotters = "0.3.7"
+rstar = "0.12.2"
