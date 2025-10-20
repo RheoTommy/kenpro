@@ -8,8 +8,8 @@ Usage:
 
 Description:
   - Reads points from testcases/input/<name>.csv (or --input path)
-  - Generates k-distance plot at testcases/output/<name>_kdist.png (or --outdir)
-  - If -e/--eps is provided, also runs DBSCAN and plots results to
+  - If -e/--eps is NOT provided, generates k-distance plot at testcases/output/<name>_k<k>_kdist.png (or --outdir)
+  - If -e/--eps IS provided, skips k-distance and runs DBSCAN and plots results to
     testcases/output/<name>.csv and testcases/output/<name>.png
 
 Options:
@@ -62,13 +62,13 @@ fi
 
 mkdir -p "$outdir"
 
-# 1) k-distance plot
-kdist_png="$outdir/${name}_k${k}_kdist.png"
-echo "[1/2] Generating k-distance plot: $kdist_png (k=$k)"
-cargo run --manifest-path rust/Cargo.toml --bin k_dist -- "$input" "$kdist_png" -k "$k"
-echo "  -> Wrote $kdist_png"
+# Helper for timing
+_now() { date +%s; }
+_print_dur() { local s=$1; local e=$2; echo "$((e - s))s"; }
 
-# 2) If eps provided, run DBSCAN and plot
+total_start=$(_now)
+
+# If eps is provided, skip k-dist and only run DBSCAN+plot
 if [[ -n "$eps" ]]; then
   mp="$k"
   if [[ -n "$min_points" ]]; then mp="$min_points"; fi
@@ -76,13 +76,30 @@ if [[ -n "$eps" ]]; then
   clustered_csv="$outdir/${name}_eps${eps_tag}_k${k}.csv"
   clustered_png="$outdir/${name}_eps${eps_tag}_k${k}.png"
 
-  echo "[2/2] Running DBSCAN: eps=$eps, min_points=$mp"
-  cargo run --manifest-path rust/Cargo.toml --bin dbscan -- "$input" "$clustered_csv" "$mp" "$eps"
+  echo "Running DBSCAN: eps=$eps, min_points=$mp"
+  step_start=$(_now)
+  cargo run --release --manifest-path rust/Cargo.toml --bin dbscan -- "$input" "$clustered_csv" "$mp" "$eps"
+  step_end=$(_now)
   echo "  -> Wrote $clustered_csv"
+  echo "  -> DBSCAN time: $(_print_dur $step_start $step_end)"
 
   echo "Plotting clustered result: $clustered_png (x_col=$x_col, y_col=$y_col)"
-  cargo run --manifest-path rust/Cargo.toml --bin plot -- "$clustered_csv" "$clustered_png" --x-col "$x_col" --y-col "$y_col"
+  step_start=$(_now)
+  cargo run --release --manifest-path rust/Cargo.toml --bin plot -- "$clustered_csv" "$clustered_png" --x-col "$x_col" --y-col "$y_col"
+  step_end=$(_now)
   echo "  -> Wrote $clustered_png"
+  echo "  -> Plot time:   $(_print_dur $step_start $step_end)"
 else
+  # Generate only k-distance plot
+  kdist_png="$outdir/${name}_k${k}_kdist.png"
+  echo "Generating k-distance plot: $kdist_png (k=$k)"
+  step_start=$(_now)
+  cargo run --release --manifest-path rust/Cargo.toml --bin k_dist -- "$input" "$kdist_png" -k "$k"
+  step_end=$(_now)
+  echo "  -> Wrote $kdist_png"
+  echo "  -> k-dist time: $(_print_dur $step_start $step_end)"
   echo "No eps provided. Inspect $kdist_png and rerun with -e <eps> to complete DBSCAN and plotting."
 fi
+
+total_end=$(_now)
+echo "Total time: $(_print_dur $total_start $total_end)"
