@@ -36,28 +36,23 @@ cid_N, xN1, xN2, ..., xND
 
 This repo provides three Rust binaries for end-to-end clustering workflows.
 
-1) DBSCAN
+1. DBSCAN
 
 - Run DBSCAN over a points CSV and produce clustered output.
-- Command:
-    - `cargo run --manifest-path rust/Cargo.toml --bin dbscan -- <input.csv> <output.csv> <min_points> <eps>`
+- Usage: `cargo run --manifest-path rust/Cargo.toml --bin dbscan -- <input.csv> <output.csv> <min_points> <eps>`
 - Input format: each line `x1,x2,...,xD` (no header)
 - Output format: each line `cid,x1,x2,...,xD` with noise as `cid = -1`
 
-2) Plot (2D)
+2. Plot (2D)
 
 - Visualize clustered CSV (any dimension; choose which two axes to draw).
-- Command:
-  -
-  `cargo run --manifest-path rust/Cargo.toml --bin plot -- <clustered.csv> <out.png> [--x-col 0] [--y-col 1] [--width 1000] [--height 800] [--point-size 2] [--title "Clustering Plot"]`
+- Usage: `cargo run --manifest-path rust/Cargo.toml --bin plot -- <clustered.csv> <out.png> [--x-col 0] [--y-col 1] [--width 1000] [--height 800] [--point-size 2] [--title "Clustering Plot"]`
 - Input format: each line `cid,x1,x2,...`
 
-3) k-distance plot
+3. k-distance plot
 
 - Compute the k-th nearest neighbor distance for each point and plot the sorted curve (helpful for picking `eps`).
-- Command:
-  -
-  `cargo run --manifest-path rust/Cargo.toml --bin k_dist -- <input.csv> <out.png> [-k 4] [--width 1200] [--height 800] [--title "k-distance plot"]`
+- Usage: `cargo run --manifest-path rust/Cargo.toml --bin k_dist -- <input.csv> <out.png> [-k 4] [--width 1200] [--height 800] [--title "k-distance plot"]`
 - Input format: each line `x1,x2,...`
 
 Notes
@@ -109,5 +104,4 @@ Below are example plots generated from the provided sample outputs:
 ![Blobs (sample)](testcases/output/blobs_eps1_k4.png)
 ![Moons (sample)](testcases/output/moons_eps0p1_k4.png)
 ![Circles (sample)](testcases/output/circles_eps0p08_k4.png)
-
 
